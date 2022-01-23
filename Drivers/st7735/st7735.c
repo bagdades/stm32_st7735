@@ -3,6 +3,7 @@
 #include "st7735.h"
 #include "stm32f1xx_hal_spi.h"
 #include "main.h"
+#include <stdint.h>
 
 #define DELAY 0x80
 
@@ -170,6 +171,7 @@ static void ST7735_SetAddressWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t 
 }
 
 void ucg_Init() {
+	LCD_SPI_HAND->CR1 |= SPI_CR1_SPE;
     ST7735_Select();
     ST7735_Reset();
     ST7735_ExecuteCommandList(init_cmds1);
@@ -178,33 +180,45 @@ void ucg_Init() {
     ST7735_Unselect();
 }
 
-void ucg_DrawPixel(uint16_t x, uint16_t y, uint16_t color) {
+void ucg_DrawPixel(ucg_t* ucg, uint16_t x, uint16_t y) {
     if((x >= ST7735_WIDTH) || (y >= ST7735_HEIGHT))
         return;
 
     ST7735_Select();
 
     ST7735_SetAddressWindow(x, y, x+1, y+1);
-    uint8_t data[] = { color >> 8, color & 0xFF };
+    uint8_t data[] = { ucg->forecolor >> 8, ucg->forecolor & 0xFF };
     ST7735_WriteData(data, sizeof(data));
 
     ST7735_Unselect();
 }
 
-static void ST7735_WriteChar(uint16_t x, uint16_t y, char ch, FontDef font, uint16_t color, uint16_t bgcolor) {
+static void ST7735_WriteChar(uint16_t x, uint16_t y, char ch, tFont* font, uint16_t color, uint16_t bgcolor) {
     uint32_t i, b, j;
+    uint8_t chr;
+    uint8_t n, m;
+    n = m = 0;
 
-    ST7735_SetAddressWindow(x, y, x+font.width-1, y+font.height-1);
+    chr = ch - font->chars[0].code;
+    if(!chr) return;
+    ST7735_SetAddressWindow(x, y, x+font->chars[chr].image->width - 1, y+font->chars[chr].image->height - 1);
 
-    for(i = 0; i < font.height; i++) {
-        b = font.data[(ch - 32) * font.height + i];
-        for(j = 0; j < font.width; j++) {
-            if((b << j) & 0x8000)  {
+    b = font->chars[chr].image->data[m++];
+    for(i = 0; i < font->chars[chr].image->height; i++) {
+        /* n = 0; */
+        for(j = 0; j < font->chars[chr].image->width; j++) {
+            if(b & 0x8000)  {
                 uint8_t data[] = { color >> 8, color & 0xFF };
                 ST7735_WriteData(data, sizeof(data));
             } else {
                 uint8_t data[] = { bgcolor >> 8, bgcolor & 0xFF };
                 ST7735_WriteData(data, sizeof(data));
+            }
+            n++;
+            b = b << 1;
+            if(n == 16) {
+                n = 0;
+                b = font->chars[chr].image->data[m++];
             }
         }
     }
@@ -227,14 +241,17 @@ static void ST7735_WriteChar(uint16_t x, uint16_t y, char ch, FontDef font, uint
 }
 */
 
-void ucg_WriteString(uint16_t x, uint16_t y, const char* str, FontDef font, uint16_t color, uint16_t bgcolor) {
+
+void ucg_WriteString(ucg_t* ucg, uint16_t x, uint16_t y, const char* str) {
     ST7735_Select();
+    uint8_t chr;
 
     while(*str) {
-        if(x + font.width >= ST7735_WIDTH) {
+        chr = *str - ucg->font->chars[0].code;
+        if(x + ucg->font->chars[chr].image->width >= ST7735_WIDTH) {
             x = 0;
-            y += font.height;
-            if(y + font.height >= ST7735_HEIGHT) {
+            y += ucg->font->chars[chr].image->height;
+            if(y + ucg->font->chars[chr].image->height >= ST7735_HEIGHT) {
                 break;
             }
 
@@ -245,15 +262,126 @@ void ucg_WriteString(uint16_t x, uint16_t y, const char* str, FontDef font, uint
             }
         }
 
-        ST7735_WriteChar(x, y, *str, font, color, bgcolor);
-        x += font.width;
+        ST7735_WriteChar(x, y, *str, ucg->font, ucg->forecolor, ucg->backcolor);
+        x += ucg->font->chars[chr].image->width;
         str++;
     }
 
     ST7735_Unselect();
 }
 
-void ucg_FillRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color) {
+void ucg_FillCircle(ucg_t* ucg, int16_t x0, int16_t y0, int16_t r) {
+   int16_t  x,y,xd;
+
+   if ( x0<0 ) return;
+   if ( y0<0 ) return;
+   if ( r<=0 ) return;
+
+   xd = 3 - (r << 1);
+   x = 0;
+   y = r;
+
+   while ( x <= y )
+   {
+     if( y > 0 )
+     {
+        ucg_DrawLine(ucg, x0 - x, y0 - y,x0 - x, y0 + y);
+        ucg_DrawLine(ucg, x0 + x, y0 - y,x0 + x, y0 + y);
+     }
+     if( x > 0 )
+     {
+        ucg_DrawLine(ucg, x0 - y, y0 - x,x0 - y, y0 + x);
+        ucg_DrawLine(ucg, x0 + y, y0 - x,x0 + y, y0 + x);
+     }
+     if ( xd < 0 )
+     {
+        xd += (x << 2) + 6;
+     }
+     else
+     {
+        xd += ((x - y) << 2) + 10;
+        y--;
+     }
+     x++;
+   }
+   ucg_DrawCircle(ucg, x0, y0, r);
+}
+
+void ucg_FillFrame(ucg_t* ucg, int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
+   int16_t n,m;
+
+   if ( x2 < x1 )
+   {
+      n = x2;
+      x2 = x1;
+      x1 = n;
+   }
+   if ( y2 < y1 )
+   {
+      n = y2;
+      y2 = y1;
+      y1 = n;
+   }
+
+   for( m=y1; m<=y2; m++ )
+   {
+      for( n=x1; n<=x2; n++ )
+      {
+         ucg_DrawPixel(ucg, n, m);
+      }
+   }
+}
+
+void ucg_FillRoundFrame(ucg_t* ucg, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t r) {
+   int16_t  x,y,xd;
+
+   if ( x2 < x1 )
+   {
+      x = x2;
+      x2 = x1;
+      x1 = x;
+   }
+   if ( y2 < y1 )
+   {
+      y = y2;
+      y2 = y1;
+      y1 = y;
+   }
+
+   if ( r<=0 ) return;
+
+   xd = 3 - (r << 1);
+   x = 0;
+   y = r;
+
+   ucg_FillFrame(ucg, x1 + r, y1, x2 - r, y2);
+
+   while ( x <= y )
+   {
+     if( y > 0 )
+     {
+        ucg_DrawLine(ucg, x2 + x - r, y1 - y + r, x2+ x - r, y + y2 - r);
+        ucg_DrawLine(ucg, x1 - x + r, y1 - y + r, x1- x + r, y + y2 - r);
+     }
+     if( x > 0 )
+     {
+        ucg_DrawLine(ucg, x1 - y + r, y1 - x + r, x1 - y + r, x + y2 - r);
+        ucg_DrawLine(ucg, x2 + y - r, y1 - x + r, x2 + y - r, x + y2 - r);
+     }
+     if ( xd < 0 )
+     {
+        xd += (x << 2) + 6;
+     }
+     else
+     {
+        xd += ((x - y) << 2) + 10;
+        y--;
+     }
+     x++;
+   }
+}
+
+void ucg_FillRectangle(ucg_t* ucg, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     // clipping
     if((x >= ST7735_WIDTH) || (y >= ST7735_HEIGHT)) return;
     if((x + w - 1) >= ST7735_WIDTH) w = ST7735_WIDTH - x;
@@ -262,7 +390,7 @@ void ucg_FillRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t 
     ST7735_Select();
     ST7735_SetAddressWindow(x, y, x+w-1, y+h-1);
 
-    uint8_t data[] = { color >> 8, color & 0xFF };
+    uint8_t data[] = { ucg->forecolor >> 8, ucg->forecolor & 0xFF };
     HAL_GPIO_WritePin(ST7735_DC_GPIO_Port, ST7735_DC_Pin, GPIO_PIN_SET);
     for(y = h; y > 0; y--) {
         for(x = w; x > 0; x--) {
@@ -275,8 +403,230 @@ void ucg_FillRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t 
     ST7735_Unselect();
 }
 
-void ucg_FillScreen(uint16_t color) {
-    ucg_FillRectangle(0, 0, ST7735_WIDTH, ST7735_HEIGHT, color);
+void ucg_FillScreen(ucg_t* ucg) {
+    ucg_FillRectangle(ucg, 0, 0, ST7735_WIDTH, ST7735_HEIGHT);
+}
+
+void ucg_DrawRectangle(ucg_t* ucg, uint8_t x, uint8_t y, uint8_t w, uint8_t h) {
+    if((x >= ST7735_WIDTH) || (y >= ST7735_HEIGHT)) return;
+    if((x + w - 1) >= ST7735_WIDTH) w = ST7735_WIDTH - x;
+    if((y + h - 1) >= ST7735_HEIGHT) h = ST7735_HEIGHT - y;
+    for(int i = x; i < (x + w); i++) {
+        ucg_DrawPixel(ucg, i, y);
+        ucg_DrawPixel(ucg, i, (y + h - 1));
+    }
+
+    for (int j = y; j < (y + h); j++) {
+      ucg_DrawPixel(ucg, x, j);
+      ucg_DrawPixel(ucg, (x + w - 1), j);
+    }
+}
+
+/* void ucg_SetColor(ucg_t* ucg, uint8_t idx, uint16_t color) { */
+/*     ucg->color[idx] = color; */
+/* } */
+
+void ucg_SetBackColor(ucg_t* ucg, uint16_t color) {
+    ucg->backcolor = color;
+}
+
+void ucg_SetForeColor(ucg_t* ucg, uint16_t color) {
+    ucg->forecolor = color;
+}
+
+uint16_t ucg_GetBackColor(ucg_t* ucg) {
+    uint16_t color;
+    color = ucg->backcolor;
+    return color;
+}
+
+uint16_t ucg_GetForeColor(ucg_t* ucg) {
+    uint16_t color;
+    color = ucg->forecolor;
+    return color;
+}
+
+void ucg_SetFont(ucg_t* ucg, tFont* font) {
+    ucg->font = font;
+}
+
+tFont* ucg_GetFont(ucg_t *ucg) {
+    tFont *font;
+    font = ucg->font;
+    return font;
+}
+
+void ucg_DrawLine(ucg_t* ucg, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+    uint16_t n, dx, dy, sgndx, sgndy, dxabs, dyabs, x, y, drawx, drawy;
+
+
+    dx = x2 - x1;
+    dy = y2 - y1;
+    dxabs = (dx>0)?dx:-dx;
+    dyabs = (dy>0)?dy:-dy;
+    sgndx = (dx>0)?1:-1;
+    sgndy = (dy>0)?1:-1;
+    x = dyabs >> 1;
+    y = dxabs >> 1;
+    drawx = x1;
+    drawy = y1;
+
+    ucg_DrawPixel(ucg, drawx, drawy);
+
+    if( dxabs >= dyabs )
+    {
+        for( n=0; n<dxabs; n++ )
+        {
+            y += dyabs;
+            if( y >= dxabs )
+            {
+                y -= dxabs;
+                drawy += sgndy;
+            }
+            drawx += sgndx;
+            ucg_DrawPixel(ucg, drawx, drawy);
+        }
+    }
+    else
+    {
+        for( n=0; n<dyabs; n++ )
+        {
+            x += dxabs;
+            if( x >= dyabs )
+            {
+                x -= dyabs;
+                drawx += sgndx;
+            }
+            drawy += sgndy;
+            ucg_DrawPixel(ucg, drawx, drawy);
+        }
+    }  
+}
+
+/*    Arc 90 degress */
+/*   Paramer s 0x03 0x0C 0x30 0xC0 */
+/*   place arc */
+void ucg_DrawArc(ucg_t* ucg, int16_t x0, int16_t y0, int16_t r, uint8_t s) {
+   int16_t x,y,xd,yd,e;
+
+   if ( x0<0 ) return;
+   if ( y0<0 ) return;
+   if ( r<=0 ) return;
+
+   xd = 1 - (r << 1);
+   yd = 0;
+   e = 0;
+   x = r;
+   y = 0;
+
+   while ( x >= y )
+   {
+      // Q1
+      if ( s & 0x01 ) ucg_DrawPixel(ucg, x0 + x, y0 - y);
+      if ( s & 0x02 ) ucg_DrawPixel(ucg, x0 + y, y0 - x);
+
+      // Q2
+      if ( s & 0x04 ) ucg_DrawPixel(ucg, x0 - y, y0 - x);
+      if ( s & 0x08 ) ucg_DrawPixel(ucg, x0 - x, y0 - y);
+
+      // Q3
+      if ( s & 0x10 ) ucg_DrawPixel(ucg, x0 - x, y0 + y);
+      if ( s & 0x20 ) ucg_DrawPixel(ucg, x0 - y, y0 + x);
+
+      // Q4
+      if ( s & 0x40 ) ucg_DrawPixel(ucg, x0 + y, y0 + x);
+      if ( s & 0x80 ) ucg_DrawPixel(ucg, x0 + x, y0 + y);
+
+      y++;
+      e += yd;
+      yd += 2;
+      if ( ((e << 1) + xd) > 0 )
+      {
+         x--;
+         e += xd;
+         xd += 2;
+      }
+   }
+}
+void ucg_DrawCircle(ucg_t* ucg, int16_t x0, int16_t y0, int16_t r) {
+   int16_t x,y,xd,yd,e;
+
+   if ( x0<0 ) return;
+   if ( y0<0 ) return;
+   if ( r<=0 ) return;
+
+   xd = 1 - (r << 1);
+   yd = 0;
+   e = 0;
+   x = r;
+   y = 0;
+
+   while ( x >= y )
+   {
+      ucg_DrawPixel(ucg, x0 - x, y0 + y);
+      ucg_DrawPixel(ucg, x0 - x, y0 - y);
+      ucg_DrawPixel(ucg, x0 + x, y0 + y);
+      ucg_DrawPixel(ucg, x0 + x, y0 - y);
+      ucg_DrawPixel(ucg, x0 - y, y0 + x);
+      ucg_DrawPixel(ucg, x0 - y, y0 - x);
+      ucg_DrawPixel(ucg, x0 + y, y0 + x);
+      ucg_DrawPixel(ucg, x0 + y, y0 - x);
+
+      y++;
+      e += yd;
+      yd += 2;
+      if ( ((e << 1) + xd) > 0 )
+      {
+         x--;
+         e += xd;
+         xd += 2;
+      }
+   }
+}
+
+void ucg_DrawRBox(ucg_t *ucg, int16_t x, int16_t y, int16_t w, int16_t h, int16_t r) {
+   int16_t x1 = x + w - 1;
+   int16_t y1 = y + h - 1;
+
+   if ( r > x1 ) return;
+   if ( r > y1 ) return;
+
+   ucg_DrawLine(ucg, x+r, y, x1-r, y);
+   ucg_DrawLine(ucg, x+r, y1, x1-r, y1);
+   /* ucg_DrawLine(ucg, x, y+r, x, y1-r); */
+   /* ucg_DrawLine(ucg, x1, y+r, x1, y1-r); */
+   ucg_DrawArc(ucg, x+r, y+r, r, 0x0C);
+   ucg_DrawArc(ucg, x1-r, y+r, r, 0x03);
+   ucg_DrawArc(ucg, x+r, y1-r, r, 0x30);
+   ucg_DrawArc(ucg, x1-r, y1-r, r, 0xC0);
+}
+
+void ucg_DrawRoundFrame(ucg_t* ucg, int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t r) {
+   int16_t n;
+   if ( x2 < x1 )
+   {
+      n = x2;
+      x2 = x1;
+      x1 = n;
+   }
+   if ( y2 < y1 )
+   {
+      n = y2;
+      y2 = y1;
+      y1 = n;
+   }
+
+   if ( r > x2 ) return;
+   if ( r > y2 ) return;
+
+   ucg_DrawLine(ucg, x1+r, y1, x2-r, y1);
+   ucg_DrawLine(ucg, x1+r, y2, x2-r, y2);
+   ucg_DrawLine(ucg, x1, y1+r, x1, y2-r);
+   ucg_DrawLine(ucg, x2, y1+r, x2, y2-r);
+   ucg_DrawArc(ucg, x1+r, y1+r, r, 0x0C);
+   ucg_DrawArc(ucg, x2-r, y1+r, r, 0x03);
+   ucg_DrawArc(ucg, x1+r, y2-r, r, 0x30);
+   ucg_DrawArc(ucg, x2-r, y2-r, r, 0xC0);
 }
 
 void ucg_DrawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t* data) {
@@ -290,10 +640,60 @@ void ucg_DrawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_
     ST7735_Unselect();
 }
 
+void ucg_DrawBmp(uint16_t x, uint16_t y, const tImage* img, uint16_t color, uint16_t bgcolor) {
+    uint16_t b;
+    uint8_t n, m;
+    n = m = 0;
+    if((x >= ST7735_WIDTH) || (y >= ST7735_HEIGHT)) return;
+    if((x + img->width - 1) >= ST7735_WIDTH) return;
+    if((y + img->height - 1) >= ST7735_HEIGHT) return;
+
+    ST7735_Select();
+    ST7735_SetAddressWindow(x, y, x+img->width - 1, y+img->height - 1);
+    b = img->data[m++];
+    for (uint8_t i = 0; i < img->height; i++) {
+        for (uint8_t j = 0; j < img->width; j++) {
+            if(b & 0x8000)  {
+                uint8_t data[] = { color >> 8, color & 0xFF };
+                ST7735_WriteData(data, sizeof(data));
+            } else {
+                uint8_t data[] = { bgcolor >> 8, bgcolor & 0xFF };
+                ST7735_WriteData(data, sizeof(data));
+            }
+            n++;
+            b = b << 1;
+            if(n == 16) {
+                n = 0;
+                b = img->data[m++];
+            }
+        }
+    }
+    ST7735_Unselect();
+}
+
+uint16_t ucg_GetYDim(ucg_t *ucg) {
+    return ucg->y_dim;
+}
+
+uint16_t ucg_GetXDim(ucg_t *ucg) {
+    return ucg->x_dim;
+}
+
+//Return width in pixel include distance beetween chars
+uint8_t ucg_GetStrWidth(ucg_t *ucg, FontDef* font, const char *str) {
+    uint8_t w = 0;
+    while (*str) {
+        w += font->width;
+        w += 1;
+        str++;
+    }
+    w -= 1;
+    return w;
+}
+
 void ucg_InvertColors(bool invert) {
     ST7735_Select();
     ST7735_WriteCommand(invert ? ST7735_INVON : ST7735_INVOFF);
     ST7735_Unselect();
 }
-
 

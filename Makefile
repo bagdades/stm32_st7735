@@ -41,6 +41,13 @@ Core/Src/stm32f1xx_it.c \
 Core/Src/stm32f1xx_hal_msp.c \
 Drivers/st7735/fonts.c \
 Drivers/st7735/st7735.c \
+Drivers/st7735/Font.c \
+Drivers/st7735/font12.c \
+Drivers/st7735/font18b.c \
+Drivers/st7735/font21.c \
+Drivers/st7735/font27.c \
+Drivers/st7735/font53.c \
+Drivers/st7735/cel.c \
 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rtc.c \
 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rtc_ex.c \

@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdio.h>
 #include "st7735.h"
 #include "fonts.h"
 #include "car.h"
@@ -49,7 +50,7 @@ RTC_HandleTypeDef hrtc;
 SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
-
+ucg_t ucg;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,72 +65,71 @@ static void MX_SPI2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void init() {
-	LCD_SPI_HAND->CR1 |= SPI_CR1_SPE;
     ucg_Init();
 
     /* const char ready[] = "Ready!\r\n"; */
     /* HAL_UART_Transmit(&huart1, (uint8_t*)ready, sizeof(ready)-1, HAL_MAX_DELAY); */
 }
 
-void loop() {
-    // Check border
-    ucg_FillScreen(ST7735_BLACK);
-
-    for(int x = 0; x < ST7735_WIDTH; x++) {
-        ucg_DrawPixel(x, 0, ST7735_RED);
-        ucg_DrawPixel(x, ST7735_HEIGHT-1, ST7735_RED);
-    }
-
-    for(int y = 0; y < ST7735_HEIGHT; y++) {
-        ucg_DrawPixel(0, y, ST7735_RED);
-        ucg_DrawPixel(ST7735_WIDTH-1, y, ST7735_RED);
-    }
-
-    HAL_Delay(3000);
-
-    // Check fonts
-    ucg_FillScreen(ST7735_BLACK);
-    ucg_WriteString(0, 0, "Font_7x10", Font_7x10, ST7735_RED, ST7735_BLACK);
-    ucg_WriteString(0, 18, "Font_11x18", Font_11x18, ST7735_GREEN, ST7735_BLACK);
-    ucg_WriteString(0, 22+18, "Font_16x26", Font_16x26, ST7735_BLUE, ST7735_BLACK);
-    HAL_Delay(2000);
-
-    // Check colors
-    ucg_FillScreen(ST7735_BLACK);
-    ucg_WriteString(0, 0, "BLACK", Font_11x18, ST7735_WHITE, ST7735_BLACK);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_BLUE);
-    ucg_WriteString(0, 0, "BLUE", Font_11x18, ST7735_BLACK, ST7735_BLUE);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_RED);
-    ucg_WriteString(0, 0, "RED", Font_11x18, ST7735_BLACK, ST7735_RED);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_GREEN);
-    ucg_WriteString(0, 0, "GREEN", Font_11x18, ST7735_BLACK, ST7735_GREEN);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_CYAN);
-    ucg_WriteString(0, 0, "CYAN", Font_11x18, ST7735_BLACK, ST7735_CYAN);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_MAGENTA);
-    ucg_WriteString(0, 0, "MAGENTA", Font_11x18, ST7735_BLACK, ST7735_MAGENTA);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_YELLOW);
-    ucg_WriteString(0, 0, "YELLOW", Font_11x18, ST7735_BLACK, ST7735_YELLOW);
-    HAL_Delay(500);
-
-    ucg_FillScreen(ST7735_WHITE);
-    ucg_WriteString(0, 0, "WHITE", Font_11x18, ST7735_BLACK, ST7735_WHITE);
-    HAL_Delay(500);
-
-	ucg_DrawImage(0, 0, ST7735_WIDTH, ST7735_HEIGHT, (uint16_t*)test_img_160x80);
-	HAL_Delay(15000);
-}
+/* void loop() { */
+/*     // Check border */
+/*     ucg_FillScreen(ST7735_BLACK); */
+/*  */
+/*     for(int x = 0; x < ST7735_WIDTH; x++) { */
+/*         ucg_DrawPixel(x, 0, ST7735_RED); */
+/*         ucg_DrawPixel(x, ST7735_HEIGHT-1, ST7735_RED); */
+/*     } */
+/*  */
+/*     for(int y = 0; y < ST7735_HEIGHT; y++) { */
+/*         ucg_DrawPixel(0, y, ST7735_RED); */
+/*         ucg_DrawPixel(ST7735_WIDTH-1, y, ST7735_RED); */
+/*     } */
+/*  */
+/*     HAL_Delay(3000); */
+/*  */
+/*     // Check fonts */
+/*     ucg_FillScreen(ST7735_BLACK); */
+/*     ucg_WriteString(0, 0, "Font_7x10", Font_7x10, ST7735_RED, ST7735_BLACK); */
+/*     ucg_WriteString(0, 18, "Font_11x18", Font_11x18, ST7735_GREEN, ST7735_BLACK); */
+/*     ucg_WriteString(0, 22+18, "Font_16x26", Font_16x26, ST7735_BLUE, ST7735_BLACK); */
+/*     HAL_Delay(2000); */
+/*  */
+/*     // Check colors */
+/*     ucg_FillScreen(ST7735_BLACK); */
+/*     ucg_WriteString(0, 0, "BLACK", Font_11x18, ST7735_WHITE, ST7735_BLACK); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_BLUE); */
+/*     ucg_WriteString(0, 0, "BLUE", Font_11x18, ST7735_BLACK, ST7735_BLUE); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_RED); */
+/*     ucg_WriteString(0, 0, "RED", Font_11x18, ST7735_BLACK, ST7735_RED); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_GREEN); */
+/*     ucg_WriteString(0, 0, "GREEN", Font_11x18, ST7735_BLACK, ST7735_GREEN); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_CYAN); */
+/*     ucg_WriteString(0, 0, "CYAN", Font_11x18, ST7735_BLACK, ST7735_CYAN); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_MAGENTA); */
+/*     ucg_WriteString(0, 0, "MAGENTA", Font_11x18, ST7735_BLACK, ST7735_MAGENTA); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_YELLOW); */
+/*     ucg_WriteString(0, 0, "YELLOW", Font_11x18, ST7735_BLACK, ST7735_YELLOW); */
+/*     HAL_Delay(500); */
+/*  */
+/*     ucg_FillScreen(ST7735_WHITE); */
+/*     ucg_WriteString(0, 0, "WHITE", Font_11x18, ST7735_BLACK, ST7735_WHITE); */
+/*     HAL_Delay(500); */
+/*  */
+/* 	ucg_DrawImage(0, 0, ST7735_WIDTH, ST7735_HEIGHT, (uint16_t*)test_img_160x80); */
+/* 	HAL_Delay(15000); */
+/* } */
 /* USER CODE END 0 */
 
 /**
@@ -138,44 +138,82 @@ void loop() {
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+	/* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_RTC_Init();
-  MX_SPI2_Init();
-  /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_RTC_Init();
+	MX_SPI2_Init();
+	/* USER CODE BEGIN 2 */
 	init();
-  /* USER CODE END 2 */
+	ucg_SetBackColor(&ucg, C_BLACK);
+	ucg_FillScreen(&ucg);
+	/* ucg_FillRectangle(1, 1, 10, 10, ST7735_YELLOW); */
+	ucg_SetForeColor(&ucg, C_CYAN);
+	/* ucg_SetColor(&ucg, 1, ST7735_BLACK); */
+	/* ucg_DrawRectangle(&ucg, 10, 10, 160, 160); */
+	ucg_SetForeColor(&ucg, C_RED);
+	ucg_SetFont(&ucg, (tFont*)&font_18b);
+	/* ucg_DrawRoundFrame(&ucg, 20, 20, 100, 40, 10); */
+	/* ucg_FillRoundFrame(&ucg, 20, 20, 100, 40, 10); */
+	/* ucg_SetColor(&ucg, 0, ST7735_BLACK); */
+	/* ucg_SetColor(&ucg, 1, ST7735_GREEN); */
+	/* ucg_WriteString(&ucg, 25, 27, "Hello"); */
+	/* ucg_SetColor(&ucg, 0, ST7735_GREEN); */
+	/* ucg_SetColor(&ucg, 1, ST7735_BLACK); */
+	/* ucg_FillCircle(&ucg, 120, 40, 20); */
+	/* uint8_t wh; */
+	/* char buff[10]; */
+	/* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  loop();
-    /* USER CODE END WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	while (1)
+	{
+		ucg_WriteString(&ucg, 1, 1, "Hello, World!");
+		ucg_DrawBmp(0, 20, &cel, C_GREEN, C_BLACK);
+		/* ucg_SetFont(&ucg, (tFont*)&font_53); */
+		/* ucg_SetForeColor(&ucg, C_BLACK); */
+		/* ucg_SetBackColor(&ucg, C_WHITE); */
+		/* ucg_WriteString(&ucg, 1, 24, "1234"); */
+		/* wh = ucg_GetStrWidth(&ucg,&Font_16x26, "Hello"); */
+		/* sprintf(buff, "%d", wh); */
+		/* ucg_WriteString(&ucg, 20, 50, buff); */
+		/* loop(); */
+		/* ucg_SetForeColor(&ucg, C_RED); */
+		/* ucg_WriteString(&ucg, 12, 12, "Hello"); */
+		/* HAL_Delay(500); */
+		/* ucg_SetForeColor(&ucg, C_BLACK); */
+		/* ucg_FillRectangle(&ucg, 12, 12, 84, 26); */
+		/* ucg_SetForeColor(&ucg, C_YELLOW); */
+		/* ucg_WriteString(&ucg, 12, 40, "Hello"); */
+		/* HAL_Delay(500); */
+		/* ucg_SetForeColor(&ucg, C_BLACK); */
+		/* ucg_FillRectangle(&ucg, 12, 40, 84, 26); */
 
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
+	}
+	/* USER CODE END 3 */
 }
 
 /**

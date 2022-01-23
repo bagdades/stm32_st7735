@@ -1,0 +1,67 @@
+Info : Unable to match requested speed 1000 kHz, using 950 kHz
+Info : Unable to match requested speed 1000 kHz, using 950 kHz
+Info : clock speed 950 kHz
+Info : STLINK v2 JTAG v32 API v2 SWIM v7 VID 0x0483 PID 0x3748
+Info : using stlink api v2
+Info : Target voltage: 4.309270
+Info : stm32f1x.cpu: hardware has 6 breakpoints, 4 watchpoints
+Info : accepting 'gdb' connection from pipe
+Info : device id = 0x20036410
+Info : flash size = 64kbytes
+undefined debug reason 7 - target needs reset
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08001950 msp: 0x20005000
+target halted due to breakpoint, current mode: Thread 
+xPSR: 0x61000000 pc: 0x2000003a msp: 0x20005000
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08001950 msp: 0x20005000
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08001950 msp: 0x20005000
+Info : halted: PC: 0x080005ac
+Info : halted: PC: 0x080005ae
+Info : halted: PC: 0x080005b0
+Info : halted: PC: 0x080005b4
+Info : halted: PC: 0x080005b8
+Info : halted: PC: 0x080005ba
+Info : halted: PC: 0x080005bc
+Info : halted: PC: 0x080005be
+Info : halted: PC: 0x080005c2
+Info : halted: PC: 0x080005ca
+Info : halted: PC: 0x080005cc
+Info : halted: PC: 0x080005ce
+Info : halted: PC: 0x080005d2
+Info : halted: PC: 0x080005d6
+Info : halted: PC: 0x080005d8
+Info : halted: PC: 0x080005da
+Info : halted: PC: 0x080005dc
+Info : halted: PC: 0x080005de
+Info : halted: PC: 0x080005e0
+Info : halted: PC: 0x080005e2
+Info : halted: PC: 0x080005e4
+Info : halted: PC: 0x080005e6
+Info : halted: PC: 0x080005e8
+Info : halted: PC: 0x080005ea
+Info : halted: PC: 0x080005ec
+Info : halted: PC: 0x08000550
+Info : halted: PC: 0x080005f2
+Info : halted: PC: 0x080005f4
+Info : halted: PC: 0x080005f6
+Info : halted: PC: 0x08000660
+Info : halted: PC: 0x08000662
+Info : halted: PC: 0x08000664
+Info : halted: PC: 0x08000666
+Info : halted: PC: 0x08000668
+Info : halted: PC: 0x0800066a
+Info : halted: PC: 0x0800066c
+Info : halted: PC: 0x0800066e
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08001950 msp: 0x20005000
+Info : halted: PC: 0x080005ac
+Info : halted: PC: 0x080005ae
+Info : halted: PC: 0x080005b0
+Info : halted: PC: 0x080005b4
+Info : halted: PC: 0x080005b8
+Info : halted: PC: 0x080005ba
+Info : halted: PC: 0x080005bc
+Info : halted: PC: 0x080005be
+Info : dropped 'gdb' connection

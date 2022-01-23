@@ -791,5 +791,38 @@
    "build/stm32f1xx_hal_uart.o"
   ],
   "file": "Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c"
+ },
+ {
+  "directory": "/home/vovan/projects/st7735",
+  "arguments": [
+   "/home/vovan/opt/gcc-arm-none-eabi-9-2019-q4-major/bin//arm-none-eabi-gcc",
+   "-c",
+   "-mcpu=cortex-m3",
+   "-mthumb",
+   "-DUSE_HAL_DRIVER",
+   "-DSTM32F103xB",
+   "-ICore/Inc",
+   "-IDrivers/STM32F1xx_HAL_Driver/Inc",
+   "-IDrivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+   "-IDrivers/CMSIS/Device/ST/STM32F1xx/Include",
+   "-IDrivers/CMSIS/Include",
+   "-IDrivers/st7735",
+   "-I/usr/include",
+   "-IDrivers/EmWin/Inc",
+   "-Og",
+   "-Wall",
+   "-fdata-sections",
+   "-ffunction-sections",
+   "-g",
+   "-gdwarf-2",
+   "-MMD",
+   "-MP",
+   "-MFbuild/ugui.d",
+   "-Wa,-a,-ad,-alms=build/ugui.lst",
+   "Drivers/st7735/ugui.c",
+   "-o",
+   "build/ugui.o"
+  ],
+  "file": "Drivers/st7735/ugui.c"
  }
 ]
